@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Play, Pause, CheckCircle, RotateCcw, Plus, LogOut, X } from 'lucide-react';
+import {
+  Play, Pause, CheckCircle, RotateCcw, Plus, LogOut, X,
+  Mail, Lock, Github, ArrowUpLeft
+} from 'lucide-react';
 
 const supabase = createClient(
     import.meta.env.VITE_SUPABASE_URL,
@@ -46,7 +49,6 @@ export default function App() {
     fetchTasks();
     const channel = supabase.channel('schema-db-changes')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
-          // Включаем тихую синхронизацию в фоне
           fetchTasks();
         })
         .subscribe();
@@ -66,6 +68,16 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
+  const handleEmailAuth = async (e, type) => {
+    e.preventDefault();
+    const email = e.target.email.value;
+    const password = e.target.password.value;
+    const { error } = type === 'login'
+        ? await supabase.auth.signInWithPassword({ email, password })
+        : await supabase.auth.signUp({ email, password });
+    if (error) alert(error.message);
+  };
+
   const addTask = async (e) => {
     if (e) e.preventDefault();
     const title = newTaskTitle.trim();
@@ -82,20 +94,18 @@ export default function App() {
       inserted_at: new Date().toISOString()
     };
 
-    // Оптимистичное добавление
     setTasks(prev => [newTask, ...prev]);
     setNewTaskTitle('');
     setIsCreating(false);
 
     const { error } = await supabase.from('tasks').insert([{ title, user_id: user.id }]);
-    if (error) fetchTasks(); // Если ошибка, откатываемся к данным с сервера
+    if (error) fetchTasks();
   };
 
   const toggleTask = async (task) => {
     const now = new Date().toISOString();
     const isStarting = !task.is_running;
 
-    // Оптимистичное изменение состояния
     setTasks(prev => prev.map(t => {
       if (t.id === task.id) {
         return {
@@ -105,7 +115,6 @@ export default function App() {
           total_seconds: isStarting ? t.total_seconds : (t.displaySeconds || t.total_seconds)
         };
       }
-      // Останавливаем другие задачи, если запускаем новую
       if (isStarting && t.is_running) {
         return { ...t, is_running: false, last_start_time: null, total_seconds: t.displaySeconds || t.total_seconds };
       }
@@ -116,20 +125,12 @@ export default function App() {
       const running = tasks.find(t => t.is_running);
       if (running) {
         const diff = Math.floor((new Date() - new Date(running.last_start_time)) / 1000);
-        await supabase.from('tasks').update({
-          is_running: false,
-          total_seconds: running.total_seconds + diff,
-          last_start_time: null
-        }).eq('id', running.id);
+        await supabase.from('tasks').update({ is_running: false, total_seconds: running.total_seconds + diff, last_start_time: null }).eq('id', running.id);
       }
       await supabase.from('tasks').update({ is_running: true, last_start_time: now }).eq('id', task.id);
     } else {
       const diff = Math.floor((new Date() - new Date(task.last_start_time)) / 1000);
-      await supabase.from('tasks').update({
-        is_running: false,
-        total_seconds: task.total_seconds + diff,
-        last_start_time: null
-      }).eq('id', task.id);
+      await supabase.from('tasks').update({ is_running: false, total_seconds: task.total_seconds + diff, last_start_time: null }).eq('id', task.id);
     }
   };
 
@@ -162,13 +163,45 @@ export default function App() {
   }
 
   if (!user) return (
-      <div className="flex h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-sky-100">
-        <button
-            onClick={() => supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } })}
-            className="bg-white/80 backdrop-blur-md text-sky-900 shadow-xl shadow-sky-200/50 px-8 py-4 rounded-full font-bold flex items-center gap-2 hover:bg-white transition-all border border-white/50"
-        >
-          Войти через Google
-        </button>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-100 to-indigo-50 flex items-center justify-center p-4">
+        <div className="w-full max-w-md bg-white/70 backdrop-blur-2xl p-8 rounded-[2.5rem] shadow-2xl shadow-sky-200/50 border border-white/50">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-black text-sky-600 tracking-widest mb-2">Кродо</h1>
+            <p className="text-sky-400 font-medium text-sm">Вход в систему</p>
+          </div>
+
+          <form onSubmit={(e) => handleEmailAuth(e, 'login')} className="space-y-4 mb-6">
+            <div className="relative">
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-sky-300" size={20} />
+              <input name="email" type="email" placeholder="Email" className="w-full bg-white/50 border border-sky-100 rounded-2xl py-3 pl-12 pr-4 outline-none focus:border-sky-400 focus:bg-white transition-all text-sky-900" required />
+            </div>
+            <div className="relative">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-sky-300" size={20} />
+              <input name="password" type="password" placeholder="Пароль" className="w-full bg-white/50 border border-sky-100 rounded-2xl py-3 pl-12 pr-4 outline-none focus:border-sky-400 focus:bg-white transition-all text-sky-900" required />
+            </div>
+            <button type="submit" className="w-full bg-sky-500 text-white font-bold py-4 rounded-2xl hover:bg-sky-600 shadow-lg shadow-sky-200 transition-all active:scale-[0.98]">Войти</button>
+          </form>
+
+          <div className="relative flex items-center justify-center mb-6">
+            <div className="w-full border-t border-sky-100"></div>
+            <span className="absolute bg-white/0 px-4 text-xs font-bold text-sky-200 uppercase tracking-widest">Или через</span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mb-8">
+            <button onClick={() => supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } })} className="flex items-center justify-center gap-3 bg-white border border-sky-50 py-3 rounded-2xl hover:shadow-md transition-all group">
+              <img src="https://www.google.com/favicon.ico" alt="G" className="w-5 h-5 grayscale group-hover:grayscale-0" />
+              <span className="text-sm font-bold text-sky-900">Google</span>
+            </button>
+            <button onClick={() => supabase.auth.signInWithOAuth({ provider: 'github', options: { redirectTo: window.location.origin } })} className="flex items-center justify-center gap-3 bg-white border border-sky-50 py-3 rounded-2xl hover:shadow-md transition-all group">
+              <Github size={20} className="text-gray-400 group-hover:text-black" />
+              <span className="text-sm font-bold text-sky-900">GitHub</span>
+            </button>
+          </div>
+
+          <p className="text-center text-xs text-sky-300">
+            Нет аккаунта? <button onClick={(e) => handleEmailAuth(e, 'signup')} className="text-sky-500 font-bold hover:underline">Создать сейчас</button>
+          </p>
+        </div>
       </div>
   );
 
@@ -187,11 +220,9 @@ export default function App() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {activeTab === 'active' && (
-                <div
-                    className={`p-6 rounded-[2.5rem] border-2 border-dashed flex flex-col items-center justify-center min-h-[240px] transition-all
-                                ${isCreating ? 'bg-white/80 border-sky-400 shadow-xl shadow-sky-200/50' : 'bg-white/20 border-sky-200 hover:border-sky-300 hover:bg-white/30 cursor-pointer backdrop-blur-sm'}`}
-                    onClick={() => !isCreating && setIsCreating(true)}
-                >
+                <div className={`p-6 rounded-[2.5rem] border-2 border-dashed flex flex-col items-center justify-center min-h-[240px] transition-all
+                            ${isCreating ? 'bg-white/80 border-sky-400 shadow-xl shadow-sky-200/50' : 'bg-white/20 border-sky-200 hover:border-sky-300 hover:bg-white/30 cursor-pointer backdrop-blur-sm'}`}
+                     onClick={() => !isCreating && setIsCreating(true)}>
                   {isCreating ? (
                       <form onSubmit={addTask} className="w-full h-full flex flex-col justify-between">
                         <input autoFocus className="bg-transparent border-b-2 border-sky-300 w-full py-2 outline-none text-xl font-bold text-sky-800" placeholder="Название..." value={newTaskTitle} onChange={e => setNewTaskTitle(e.target.value)} onBlur={() => !newTaskTitle && setIsCreating(false)} />
