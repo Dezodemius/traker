@@ -92,7 +92,15 @@ export default function App() {
 
   if (!user) return (
       <div className="flex h-screen items-center justify-center">
-        <button onClick={() => supabase.auth.signInWithOAuth({ provider: 'google' })} className="bg-white text-black px-6 py-3 rounded-full font-bold flex items-center gap-2">
+        <button
+            onClick={() => supabase.auth.signInWithOAuth({
+              provider: 'google',
+              options: {
+                redirectTo: window.location.origin // Это скажет Supabase вернуться на текущий домен Vercel
+              }
+            })}
+            className="bg-white text-black px-6 py-3 rounded-full font-bold flex items-center gap-2"
+        >
           Войти через Google
         </button>
       </div>
