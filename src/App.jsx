@@ -90,6 +90,30 @@ export default function App() {
     if (error) alert(error.message);
   };
 
+  const addTask = async (e) => {
+    if (e) e.preventDefault();
+    const title = newTaskTitle.trim();
+    if (!title) { setIsCreating(false); return; }
+
+    const tempId = Math.random().toString();
+    const newTask = {
+      id: tempId,
+      title,
+      user_id: user.id,
+      total_seconds: 0,
+      is_running: false,
+      is_archived: false,
+      inserted_at: new Date().toISOString()
+    };
+
+    setTasks(prev => [newTask, ...prev]);
+    setNewTaskTitle('');
+    setIsCreating(false);
+
+    const { error } = await supabase.from('tasks').insert([{ title, user_id: user.id }]);
+    if (error) fetchTasks();
+  };
+
   const toggleTask = async (task) => {
     const now = new Date().toISOString();
     const isStarting = !task.is_running;
