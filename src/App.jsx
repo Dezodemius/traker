@@ -126,7 +126,7 @@ export default function App() {
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-100 to-indigo-50 flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
             <div className="w-12 h-12 bg-sky-400 rounded-full animate-ping opacity-20"></div>
-            <p className="text-sky-400 font-medium tracking-widest animate-pulse">CLOCK_WORK</p>
+            <p className="text-sky-400 font-medium tracking-widest animate-pulse">traker</p>
           </div>
         </div>
     );
@@ -147,7 +147,7 @@ export default function App() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-100 to-indigo-50 font-sans text-sky-900">
         <div className="max-w-6xl mx-auto p-6">
           <header className="flex justify-between items-center mb-10">
-            <h1 className="text-2xl font-black text-sky-600 tracking-widest drop-shadow-sm">CLOCK_WORK</h1>
+            <h1 className="text-2xl font-black text-sky-600 tracking-widest drop-shadow-sm">traker</h1>
             <button
                 onClick={() => supabase.auth.signOut()}
                 className="bg-white/40 backdrop-blur-sm p-2 rounded-full text-sky-400 hover:text-sky-600 hover:bg-white/60 transition-all border border-white/50 shadow-sm"
