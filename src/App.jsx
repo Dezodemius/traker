@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Play, Pause, CheckCircle, RotateCcw, Plus, LogOut, X } from 'lucide-react';
+import { Play, Pause, CheckCircle, RotateCcw, Plus, LogOut, X, ArrowUpLeft } from 'lucide-react';
 
 const supabase = createClient(
     import.meta.env.VITE_SUPABASE_URL,
@@ -206,17 +206,22 @@ export default function App() {
                   </div>
 
                   <div className="flex justify-between items-center mt-6">
-                    <button onClick={() => toggleTask(task)} className={`p-5 rounded-[1.5rem] transition-all duration-300 shadow-md ${task.is_running ? 'bg-sky-500 text-white shadow-sky-200' : 'bg-white text-sky-400'}`}>
-                      {task.is_running ? <Pause fill="currentColor" size={24} /> : <Play fill="currentColor" size={24} />}
-                    </button>
-
                     {activeTab === 'active' ? (
-                        <button onClick={() => archiveTask(task.id)} className="p-2 text-sky-200 hover:text-emerald-400 transition-colors bg-white/30 rounded-full">
-                          <CheckCircle size={28}/>
-                        </button>
+                        <>
+                          <button onClick={() => toggleTask(task)} className={`p-5 rounded-[1.5rem] transition-all duration-300 shadow-md ${task.is_running ? 'bg-sky-500 text-white shadow-sky-200' : 'bg-white text-sky-400'}`}>
+                            {task.is_running ? <Pause fill="currentColor" size={24} /> : <Play fill="currentColor" size={24} />}
+                          </button>
+                          <button onClick={() => archiveTask(task.id)} className="p-2 text-sky-200 hover:text-emerald-400 transition-colors bg-white/30 rounded-full">
+                            <CheckCircle size={28}/>
+                          </button>
+                        </>
                     ) : (
-                        <button onClick={() => unarchiveTask(task.id)} className="p-2 text-sky-200 hover:text-sky-500 transition-colors bg-white/30 rounded-full">
-                          <RotateCcw size={28}/>
+                        <button
+                            onClick={() => unarchiveTask(task.id)}
+                            className="w-full flex items-center justify-center gap-2 p-4 bg-white/60 text-sky-600 font-bold rounded-2xl hover:bg-white hover:shadow-md transition-all border border-white"
+                        >
+                          <RotateCcw size={20} />
+                          <span>Вернуть</span>
                         </button>
                     )}
                   </div>
