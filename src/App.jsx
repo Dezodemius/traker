@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Play, Pause, CheckCircle, RotateCcw, Plus, LogOut, X, ArrowUpLeft } from 'lucide-react';
+import { Play, Pause, CheckCircle, RotateCcw, Plus, LogOut, X } from 'lucide-react';
 
 const supabase = createClient(
     import.meta.env.VITE_SUPABASE_URL,
@@ -28,14 +28,11 @@ export default function App() {
       setUser(session?.user ?? null);
       setLoading(false);
     };
-
     checkUser();
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       setLoading(false);
     });
-
     return () => subscription.unsubscribe();
   }, []);
 
@@ -47,11 +44,12 @@ export default function App() {
   useEffect(() => {
     if (!user) return;
     fetchTasks();
-
     const channel = supabase.channel('schema-db-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => fetchTasks())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
+          // Включаем тихую синхронизацию в фоне
+          fetchTasks();
+        })
         .subscribe();
-
     return () => supabase.removeChannel(channel);
   }, [user]);
 
@@ -70,48 +68,79 @@ export default function App() {
 
   const addTask = async (e) => {
     if (e) e.preventDefault();
-    if (!newTaskTitle.trim()) {
-      setIsCreating(false);
-      return;
-    }
-    const { error } = await supabase.from('tasks').insert([{ title: newTaskTitle, user_id: user.id }]);
-    if (!error) {
-      setNewTaskTitle('');
-      setIsCreating(false);
-      fetchTasks();
-    }
+    const title = newTaskTitle.trim();
+    if (!title) { setIsCreating(false); return; }
+
+    const tempId = Math.random().toString();
+    const newTask = {
+      id: tempId,
+      title,
+      user_id: user.id,
+      total_seconds: 0,
+      is_running: false,
+      is_archived: false,
+      inserted_at: new Date().toISOString()
+    };
+
+    // Оптимистичное добавление
+    setTasks(prev => [newTask, ...prev]);
+    setNewTaskTitle('');
+    setIsCreating(false);
+
+    const { error } = await supabase.from('tasks').insert([{ title, user_id: user.id }]);
+    if (error) fetchTasks(); // Если ошибка, откатываемся к данным с сервера
   };
 
   const toggleTask = async (task) => {
-    if (!task.is_running) {
-      const running = tasks.find(t => t.is_running);
-      if (running) await stopTask(running);
-      await supabase.from('tasks').update({ is_running: true, last_start_time: new Date().toISOString() }).eq('id', task.id);
-    } else {
-      await stopTask(task);
-    }
-    fetchTasks();
-  };
+    const now = new Date().toISOString();
+    const isStarting = !task.is_running;
 
-  const stopTask = async (task) => {
-    const diff = Math.floor((new Date() - new Date(task.last_start_time)) / 1000);
-    await supabase.from('tasks').update({
-      is_running: false,
-      total_seconds: task.total_seconds + diff,
-      last_start_time: null
-    }).eq('id', task.id);
+    // Оптимистичное изменение состояния
+    setTasks(prev => prev.map(t => {
+      if (t.id === task.id) {
+        return {
+          ...t,
+          is_running: isStarting,
+          last_start_time: isStarting ? now : null,
+          total_seconds: isStarting ? t.total_seconds : (t.displaySeconds || t.total_seconds)
+        };
+      }
+      // Останавливаем другие задачи, если запускаем новую
+      if (isStarting && t.is_running) {
+        return { ...t, is_running: false, last_start_time: null, total_seconds: t.displaySeconds || t.total_seconds };
+      }
+      return t;
+    }));
+
+    if (isStarting) {
+      const running = tasks.find(t => t.is_running);
+      if (running) {
+        const diff = Math.floor((new Date() - new Date(running.last_start_time)) / 1000);
+        await supabase.from('tasks').update({
+          is_running: false,
+          total_seconds: running.total_seconds + diff,
+          last_start_time: null
+        }).eq('id', running.id);
+      }
+      await supabase.from('tasks').update({ is_running: true, last_start_time: now }).eq('id', task.id);
+    } else {
+      const diff = Math.floor((new Date() - new Date(task.last_start_time)) / 1000);
+      await supabase.from('tasks').update({
+        is_running: false,
+        total_seconds: task.total_seconds + diff,
+        last_start_time: null
+      }).eq('id', task.id);
+    }
   };
 
   const archiveTask = async (id) => {
-    const task = tasks.find(t => t.id === id);
-    if (task?.is_running) await stopTask(task);
-    const { error } = await supabase.from('tasks').update({ is_archived: true, is_running: false }).eq('id', id);
-    if (!error) fetchTasks();
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, is_archived: true, is_running: false } : t));
+    await supabase.from('tasks').update({ is_archived: true, is_running: false }).eq('id', id);
   };
 
   const unarchiveTask = async (id) => {
-    const { error } = await supabase.from('tasks').update({ is_archived: false }).eq('id', id);
-    if (!error) fetchTasks();
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, is_archived: false } : t));
+    await supabase.from('tasks').update({ is_archived: false }).eq('id', id);
   };
 
   const formatTime = (s = 0) => {
@@ -124,9 +153,9 @@ export default function App() {
   if (loading) {
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-100 to-indigo-50 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
+          <div className="flex flex-col items-center gap-4 text-sky-400 font-medium tracking-widest animate-pulse">
             <div className="w-12 h-12 bg-sky-400 rounded-full animate-ping opacity-20"></div>
-            <p className="text-sky-400 font-medium tracking-widest animate-pulse">traker</p>
+            <p>traker</p>
           </div>
         </div>
     );
@@ -148,12 +177,7 @@ export default function App() {
         <div className="max-w-6xl mx-auto p-6">
           <header className="flex justify-between items-center mb-10">
             <h1 className="text-2xl font-black text-sky-600 tracking-widest drop-shadow-sm">traker</h1>
-            <button
-                onClick={() => supabase.auth.signOut()}
-                className="bg-white/40 backdrop-blur-sm p-2 rounded-full text-sky-400 hover:text-sky-600 hover:bg-white/60 transition-all border border-white/50 shadow-sm"
-            >
-              <LogOut size={20}/>
-            </button>
+            <button onClick={() => supabase.auth.signOut()} className="bg-white/40 backdrop-blur-sm p-2 rounded-full text-sky-400 hover:text-sky-600 hover:bg-white/60 transition-all border border-white/50 shadow-sm"><LogOut size={20}/></button>
           </header>
 
           <div className="flex gap-6 mb-12 border-b border-sky-200/50">
@@ -170,14 +194,7 @@ export default function App() {
                 >
                   {isCreating ? (
                       <form onSubmit={addTask} className="w-full h-full flex flex-col justify-between">
-                        <input
-                            autoFocus
-                            className="bg-transparent border-b-2 border-sky-300 w-full py-2 outline-none text-xl font-bold text-sky-800 placeholder-sky-200"
-                            placeholder="Название..."
-                            value={newTaskTitle}
-                            onChange={e => setNewTaskTitle(e.target.value)}
-                            onBlur={() => !newTaskTitle && setIsCreating(false)}
-                        />
+                        <input autoFocus className="bg-transparent border-b-2 border-sky-300 w-full py-2 outline-none text-xl font-bold text-sky-800" placeholder="Название..." value={newTaskTitle} onChange={e => setNewTaskTitle(e.target.value)} onBlur={() => !newTaskTitle && setIsCreating(false)} />
                         <div className="flex gap-2 mt-6">
                           <button type="submit" className="flex-1 bg-sky-500 text-white p-3 rounded-2xl hover:bg-sky-600 shadow-md shadow-sky-200">Создать</button>
                           <button type="button" onClick={(e) => {e.stopPropagation(); setIsCreating(false)}} className="bg-white/50 text-sky-400 p-3 rounded-2xl hover:bg-white/80"><X size={20}/></button>
@@ -194,35 +211,21 @@ export default function App() {
 
             {tasks.filter(t => activeTab === 'active' ? !t.is_archived : t.is_archived).map(task => (
                 <div key={task.id} className={`p-6 rounded-[2.5rem] border border-white/60 backdrop-blur-md transition-all duration-700 flex flex-col justify-between min-h-[240px] shadow-sm
-                            ${task.is_running
-                    ? 'bg-white/90 border-sky-300 shadow-2xl shadow-sky-300/30 scale-[1.02]'
-                    : 'bg-white/50 border-white/20 hover:bg-white/70 hover:shadow-lg'}`}
-                >
+                            ${task.is_running ? 'bg-white/90 border-sky-300 shadow-2xl shadow-sky-300/30 scale-[1.02]' : 'bg-white/50 border-white/20 hover:bg-white/70 hover:shadow-lg'}`}>
                   <div>
                     <h3 className="font-bold text-sky-800/80 mb-1 truncate text-lg">{task.title}</h3>
-                    <div className={`text-4xl font-black font-mono tracking-tighter ${task.is_running ? 'text-sky-600' : 'text-sky-200'}`}>
-                      {formatTime(task.displaySeconds || task.total_seconds)}
-                    </div>
+                    <div className={`text-4xl font-black font-mono tracking-tighter ${task.is_running ? 'text-sky-600' : 'text-sky-200'}`}>{formatTime(task.displaySeconds || task.total_seconds)}</div>
                   </div>
-
                   <div className="flex justify-between items-center mt-6">
                     {activeTab === 'active' ? (
                         <>
                           <button onClick={() => toggleTask(task)} className={`p-5 rounded-[1.5rem] transition-all duration-300 shadow-md ${task.is_running ? 'bg-sky-500 text-white shadow-sky-200' : 'bg-white text-sky-400'}`}>
                             {task.is_running ? <Pause fill="currentColor" size={24} /> : <Play fill="currentColor" size={24} />}
                           </button>
-                          <button onClick={() => archiveTask(task.id)} className="p-2 text-sky-200 hover:text-emerald-400 transition-colors bg-white/30 rounded-full">
-                            <CheckCircle size={28}/>
-                          </button>
+                          <button onClick={() => archiveTask(task.id)} className="p-2 text-sky-200 hover:text-emerald-400 transition-colors bg-white/30 rounded-full"><CheckCircle size={28}/></button>
                         </>
                     ) : (
-                        <button
-                            onClick={() => unarchiveTask(task.id)}
-                            className="w-full flex items-center justify-center gap-2 p-4 bg-white/60 text-sky-600 font-bold rounded-2xl hover:bg-white hover:shadow-md transition-all border border-white"
-                        >
-                          <RotateCcw size={20} />
-                          <span>Вернуть</span>
-                        </button>
+                        <button onClick={() => unarchiveTask(task.id)} className="w-full flex items-center justify-center gap-2 p-4 bg-white/60 text-sky-600 font-bold rounded-2xl hover:bg-white transition-all border border-white"><RotateCcw size={20} /><span>Вернуть</span></button>
                     )}
                   </div>
                 </div>
