@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Analytics } from "@vercel/analytics/next"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import { createClient } from '@supabase/supabase-js';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import {
@@ -223,6 +224,7 @@ export default function App() {
   return (
       <div className={`min-h-screen transition-colors duration-500 font-sans ${darkMode ? 'bg-slate-900 text-slate-200' : 'bg-gradient-to-br from-blue-50 via-sky-100 to-indigo-50 text-sky-900'}`}>
         <Analytics />
+        <SpeedInsights/>
         <div className="max-w-6xl mx-auto p-6">
           <header className="flex justify-between items-center mb-10">
             <h1 className="text-3xl font-black text-sky-500 tracking-tighter">КРОДО</h1>
