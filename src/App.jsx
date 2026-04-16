@@ -27,11 +27,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('active');
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
 
-  // Состояние темы
-  const [darkMode, setDarkMode] = useState(() => {
-    return localStorage.getItem('theme') === 'dark';
-  });
-
+  // Переключение темы
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
@@ -52,7 +48,6 @@ export default function App() {
     checkUser();
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
-      setLoading(false);
       if (!session) setTasks([]); // Очистка при выходе
     });
     return () => subscription.unsubscribe();
@@ -67,11 +62,7 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (user) {
-      fetchTasks(); // Грузим задачи нового юзера
-    } else {
-      setTasks([]); // Стираем всё, если юзер вышел
-    }
+    if (user) fetchTasks();
   }, [user]);
 
   // Таймер обновления в реальном времени
