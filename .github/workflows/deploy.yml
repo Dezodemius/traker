@@ -2,10 +2,13 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ main ] # Триггер при пуше в ветку main
+    branches: [ main ]
 
 permissions:
   contents: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build-and-deploy:
@@ -18,7 +21,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: 'npm'
 
       - name: Install dependencies
@@ -27,12 +30,11 @@ jobs:
       - name: Build project
         run: npm run build
         env:
-          # Передаем секреты из настроек GitHub в процесс сборки
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: dist # Папка, которую создал Vite
-          branch: gh-pages # Ветка, где будет лежать готовый сайт
+          folder: dist
+          branch: gh-pages
