@@ -60,8 +60,11 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (!user) return;
-    fetchTasks();
+    if (user) {
+      fetchTasks(); // Грузим задачи нового юзера
+    } else {
+      setTasks([]); // Стираем всё, если юзер вышел
+    }
   }, [user]);
 
   useEffect(() => {
