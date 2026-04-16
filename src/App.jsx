@@ -4,7 +4,14 @@ import { Play, Pause, CheckCircle, RotateCcw, Plus, LogOut, X } from 'lucide-rea
 
 const supabase = createClient(
     import.meta.env.VITE_SUPABASE_URL,
-    import.meta.env.VITE_SUPABASE_ANON_KEY
+    import.meta.env.VITE_SUPABASE_ANON_KEY,
+    {
+      auth: {
+        persistSession: true,      // Сохранять сессию в браузере
+        autoRefreshToken: true,    // Автоматически обновлять токен, если он протух
+        detectSessionInUrl: true   // Важно для возврата из Google
+      }
+    }
 );
 
 export default function App() {
@@ -13,6 +20,8 @@ export default function App() {
   const [isCreating, setIsCreating] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [activeTab, setActiveTab] = useState('active');
+
+  // --- СИСТЕМНАЯ ЛОГИКА ---
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -34,10 +43,7 @@ export default function App() {
     fetchTasks();
 
     const channel = supabase.channel('schema-db-changes')
-        .on('postgres_changes',
-            { event: '*', schema: 'public', table: 'tasks' },
-            () => fetchTasks()
-        )
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => fetchTasks())
         .subscribe();
 
     return () => supabase.removeChannel(channel);
@@ -56,12 +62,11 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
+  // --- ФУНКЦИИ УПРАВЛЕНИЯ ЗАДАЧАМИ ---
+
   const addTask = async (e) => {
     if (e) e.preventDefault();
-    if (!newTaskTitle.trim()) {
-      setIsCreating(false);
-      return;
-    }
+    if (!newTaskTitle.trim()) { setIsCreating(false); return; }
     const { error } = await supabase.from('tasks').insert([{ title: newTaskTitle, user_id: user.id }]);
     if (!error) {
       setNewTaskTitle('');
@@ -78,6 +83,7 @@ export default function App() {
     } else {
       await stopTask(task);
     }
+    fetchTasks();
   };
 
   const stopTask = async (task) => {
@@ -89,12 +95,37 @@ export default function App() {
     }).eq('id', task.id);
   };
 
+  // ФУНКЦИИ ДЛЯ АРХИВА (которые ты искал)
+  const archiveTask = async (id) => {
+    // Сначала останавливаем задачу, если она бежит
+    const task = tasks.find(t => t.id === id);
+    if (task?.is_running) await stopTask(task);
+
+    const { error } = await supabase
+        .from('tasks')
+        .update({ is_archived: true, is_running: false })
+        .eq('id', id);
+
+    if (!error) fetchTasks();
+  };
+
+  const unarchiveTask = async (id) => {
+    const { error } = await supabase
+        .from('tasks')
+        .update({ is_archived: false })
+        .eq('id', id);
+
+    if (!error) fetchTasks();
+  };
+
   const formatTime = (s = 0) => {
     const h = Math.floor(s / 3600);
     const m = Math.floor((s % 3600) / 60);
     const sec = s % 60;
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
   };
+
+  // --- ИНТЕРФЕЙС ---
 
   if (!user) return (
       <div className="flex h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-sky-100">
@@ -109,7 +140,7 @@ export default function App() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-100 to-indigo-50 font-sans text-sky-900">
         <div className="max-w-6xl mx-auto p-6">
           <header className="flex justify-between items-center mb-10">
-            <h1 className="text-2xl font-black text-sky-600 tracking-widest drop-shadow-sm">traker</h1>
+            <h1 className="text-2xl font-black text-sky-600 tracking-widest drop-shadow-sm">CLOCK_WORK</h1>
             <button onClick={() => supabase.auth.signOut()} className="bg-white/40 backdrop-blur-sm p-2 rounded-full text-sky-400 hover:text-sky-600 hover:bg-white/60 transition-all border border-white/50 shadow-sm"><LogOut size={20}/></button>
           </header>
 
@@ -129,14 +160,14 @@ export default function App() {
                         <input
                             autoFocus
                             className="bg-transparent border-b-2 border-sky-300 w-full py-2 outline-none text-xl font-bold text-sky-800 placeholder-sky-200"
-                            placeholder="Название задачи..."
+                            placeholder="Название..."
                             value={newTaskTitle}
                             onChange={e => setNewTaskTitle(e.target.value)}
                             onBlur={() => !newTaskTitle && setIsCreating(false)}
                         />
                         <div className="flex gap-2 mt-6">
-                          <button type="submit" className="flex-1 bg-sky-500 text-white p-3 rounded-2xl hover:bg-sky-600 shadow-md shadow-sky-200 transition-all">Создать</button>
-                          <button type="button" onClick={() => setIsCreating(false)} className="bg-white/50 text-sky-400 p-3 rounded-2xl hover:bg-white/80 transition-all"><X size={20}/></button>
+                          <button type="submit" className="flex-1 bg-sky-500 text-white p-3 rounded-2xl hover:bg-sky-600 shadow-md shadow-sky-200">Создать</button>
+                          <button type="button" onClick={(e) => {e.stopPropagation(); setIsCreating(false)}} className="bg-white/50 text-sky-400 p-3 rounded-2xl hover:bg-white/80"><X size={20}/></button>
                         </div>
                       </form>
                   ) : (
@@ -152,24 +183,24 @@ export default function App() {
                 <div key={task.id} className={`p-6 rounded-[2.5rem] border border-white/60 backdrop-blur-md transition-all duration-700 flex flex-col justify-between min-h-[240px] shadow-sm
                       ${task.is_running
                     ? 'bg-white/90 border-sky-300 shadow-2xl shadow-sky-300/30 scale-[1.02]'
-                    : 'bg-white/50 border-white/20 hover:bg-white/70 hover:shadow-lg hover:shadow-sky-100/50'}`}>
+                    : 'bg-white/50 border-white/20 hover:bg-white/70 hover:shadow-lg'}`}>
 
                   <div>
-                    <h3 className="font-bold text-sky-800/80 mb-1 truncate text-lg tracking-tight">{task.title}</h3>
+                    <h3 className="font-bold text-sky-800/80 mb-1 truncate text-lg">{task.title}</h3>
                     <div className={`text-4xl font-black font-mono tracking-tighter ${task.is_running ? 'text-sky-600' : 'text-sky-200'}`}>
                       {formatTime(task.displaySeconds || task.total_seconds)}
                     </div>
                   </div>
 
                   <div className="flex justify-between items-center mt-6">
-                    <button onClick={() => toggleTask(task)} className={`p-5 rounded-[1.5rem] transition-all duration-300 shadow-md ${task.is_running ? 'bg-sky-500 text-white hover:bg-sky-600 shadow-sky-200' : 'bg-white text-sky-400 hover:text-sky-600 hover:shadow-sky-100'}`}>
+                    <button onClick={() => toggleTask(task)} className={`p-5 rounded-[1.5rem] transition-all duration-300 shadow-md ${task.is_running ? 'bg-sky-500 text-white shadow-sky-200' : 'bg-white text-sky-400'}`}>
                       {task.is_running ? <Pause fill="currentColor" size={24} /> : <Play fill="currentColor" size={24} />}
                     </button>
 
                     {activeTab === 'active' ? (
-                        <button onClick={() => supabase.from('tasks').update({ is_archived: true, is_running: false }).eq('id', task.id)} className="p-2 text-sky-200 hover:text-emerald-400 transition-colors bg-white/30 rounded-full"><CheckCircle size={28}/></button>
+                        <button onClick={() => archiveTask(task.id)} className="p-2 text-sky-200 hover:text-emerald-400 transition-colors bg-white/30 rounded-full"><CheckCircle size={28}/></button>
                     ) : (
-                        <button onClick={() => supabase.from('tasks').update({ is_archived: false }).eq('id', task.id)} className="p-2 text-sky-200 hover:text-sky-500 transition-colors bg-white/30 rounded-full"><RotateCcw size={28}/></button>
+                        <button onClick={() => unarchiveTask(task.id)} className="p-2 text-sky-200 hover:text-sky-500 transition-colors bg-white/30 rounded-full"><RotateCcw size={28}/></button>
                     )}
                   </div>
                 </div>
