@@ -40,6 +40,8 @@ const TEXT = {
   restore: '\u0412\u043e\u0441\u0441\u0442\u0430\u043d\u043e\u0432\u0438\u0442\u044c'
 };
 
+const BRAND_LOGO = '/android-chrome-192x192.png';
+
 export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -319,7 +321,10 @@ export default function App() {
   if (loading) {
     return (
       <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-slate-900' : 'bg-blue-50'}`}>
-        <div className="text-sky-500 font-black animate-pulse tracking-widest text-2xl">{TEXT.brand}</div>
+        <div className="flex flex-col items-center gap-4 animate-pulse">
+          <img src={BRAND_LOGO} alt={TEXT.brand} className="w-16 h-16" />
+          <div className="text-sky-500 font-black tracking-widest text-2xl">{TEXT.brand}</div>
+        </div>
       </div>
     );
   }
@@ -329,6 +334,7 @@ export default function App() {
       <div className={`min-h-screen flex items-center justify-center p-4 transition-colors duration-500 ${darkMode ? 'bg-slate-900' : 'bg-blue-50'}`}>
         <div className={`w-full max-w-md p-8 rounded-[2.5rem] shadow-2xl border backdrop-blur-2xl transition-all ${darkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-white/70 border-white/50 shadow-sky-200/50'}`}>
           <div className="text-center mb-8">
+            <img src={BRAND_LOGO} alt={TEXT.brand} className="w-20 h-20 mx-auto mb-4" />
             <h1 className="text-4xl font-black text-sky-500 tracking-tighter mb-2">{TEXT.brand}</h1>
             <p className={`${darkMode ? 'text-slate-400' : 'text-sky-400'} font-medium text-sm italic`}>{TEXT.subtitle}</p>
           </div>
@@ -408,7 +414,10 @@ export default function App() {
 
       <div className="max-w-6xl mx-auto p-6">
         <header className="flex justify-between items-center mb-10">
-          <h1 className="text-3xl font-black text-sky-500 tracking-tighter">{TEXT.brand}</h1>
+          <div className="flex items-center gap-3">
+            <img src={BRAND_LOGO} alt={TEXT.brand} className="w-11 h-11" />
+            <h1 className="text-3xl font-black text-sky-500 tracking-tighter">{TEXT.brand}</h1>
+          </div>
           <div className="flex gap-3">
             <button onClick={() => setDarkMode(!darkMode)} className={`p-2 rounded-full border transition-all ${darkMode ? 'bg-slate-800 border-slate-700 text-yellow-400' : 'bg-white/40 border-white/50 text-sky-500'}`}>
               {darkMode ? <Sun size={20} /> : <Moon size={20} />}
