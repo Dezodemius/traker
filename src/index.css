@@ -2,6 +2,77 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  @apply bg-gray-950;
+:root {
+  color-scheme: light;
+  /* Премиальный бумажный крафт */
+  --background: oklch(0.958 0.006 95); /* #F4F3EF слоновая кость */
+  --foreground: oklch(0.26 0.012 95);
+  --card: oklch(1 0 0); /* #FFFFFF чисто белые блоки */
+  --card-foreground: oklch(0.26 0.012 95);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.26 0.012 95);
+  --primary: oklch(0.62 0.16 55); /* #D97706 карамельный янтарь */
+  --primary-foreground: oklch(0.99 0.01 95);
+  --secondary: oklch(0.93 0.008 95);
+  --secondary-foreground: oklch(0.3 0.012 95);
+  --muted: oklch(0.94 0.006 95);
+  --muted-foreground: oklch(0.52 0.012 95);
+  --accent: oklch(0.93 0.02 65);
+  --accent-foreground: oklch(0.3 0.03 55);
+  --destructive: oklch(0.58 0.22 27);
+  --border: oklch(0.89 0.008 95);
+  --input: oklch(0.89 0.008 95);
+  --ring: oklch(0.62 0.16 55);
+  --running: oklch(0.63 0.17 149); /* #16A34A изумруд */
+  --running-foreground: oklch(0.98 0.02 149);
+  --paused: oklch(0.55 0.02 95);
+  --chart-1: oklch(0.62 0.16 55);
+  --chart-2: oklch(0.63 0.17 149);
+  --chart-3: oklch(0.55 0.13 230);
+  --chart-4: oklch(0.6 0.16 30);
+  --chart-5: oklch(0.5 0.02 95);
+  --radius: 0.625rem;
+}
+
+.dark {
+  color-scheme: dark;
+  /* Фокус и Драйв */
+  --background: oklch(0.17 0.007 265); /* #0F1115 графит */
+  --foreground: oklch(0.94 0.004 250); /* #ECEFF1 мягкий белый */
+  --card: oklch(0.21 0.008 265); /* #161920 синеватый серый */
+  --card-foreground: oklch(0.94 0.004 250);
+  --popover: oklch(0.2 0.008 265);
+  --popover-foreground: oklch(0.94 0.004 250);
+  --primary: oklch(0.8 0.16 78); /* #FFB300 тёплый янтарь */
+  --primary-foreground: oklch(0.18 0.03 78);
+  --secondary: oklch(0.26 0.009 265);
+  --secondary-foreground: oklch(0.94 0.004 250);
+  --muted: oklch(0.25 0.009 265);
+  --muted-foreground: oklch(0.68 0.01 260);
+  --accent: oklch(0.28 0.011 265);
+  --accent-foreground: oklch(0.94 0.004 250);
+  --destructive: oklch(0.64 0.2 22);
+  --border: oklch(1 0 0 / 9%);
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(0.8 0.16 78);
+  --running: oklch(0.85 0.24 150); /* #00E676 неоновый Spring Green */
+  --running-foreground: oklch(0.18 0.05 150);
+  --paused: oklch(0.72 0.03 260);
+  --chart-1: oklch(0.8 0.16 78);
+  --chart-2: oklch(0.85 0.24 150);
+  --chart-3: oklch(0.68 0.12 230);
+  --chart-4: oklch(0.7 0.14 30);
+  --chart-5: oklch(0.6 0.02 260);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
 }
