@@ -48,7 +48,19 @@ export function LabelChip({ label }) {
   )
 }
 
-export function TaskCard({ task, label, columns, running, elapsedMs, onToggle, onMove, onDelete }) {
+export function TaskCard({
+  task,
+  label,
+  columns,
+  running,
+  elapsedMs,
+  onToggle,
+  onMove,
+  groupOptions,
+  group,
+  onMoveGroup,
+  onDelete,
+}) {
   const column = columns.find((c) => c.id === task.columnId)
   const isDone = column?.isDone
   const priority = priorityMeta[task.priority]
@@ -108,6 +120,21 @@ export function TaskCard({ task, label, columns, running, elapsedMs, onToggle, o
         </div>
 
         <div className="flex items-center gap-2">
+          {onMoveGroup && (
+            <select
+              aria-label="Переместить в группу"
+              value={group === 'Без группы' ? '' : group}
+              onChange={(e) => onMoveGroup(e.target.value)}
+              className="max-w-[8rem] truncate rounded-md border border-border bg-secondary px-2 py-1 text-xs text-secondary-foreground outline-none transition-colors hover:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <option value="">Без группы</option>
+              {groupOptions?.map((g) => (
+                <option key={g} value={g}>
+                  {g}
+                </option>
+              ))}
+            </select>
+          )}
           <select
             aria-label="Переместить задачу"
             value={task.columnId}

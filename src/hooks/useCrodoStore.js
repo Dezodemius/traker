@@ -317,6 +317,35 @@ export function useCrodoStore(userId) {
     [columns, userId, loadWorkspace],
   )
 
+  const moveTaskGroup = useCallback(
+    async (id, group) => {
+      const task = tasks.find((t) => t.id === id)
+      if (!task) return
+
+      setTasks((list) =>
+        list.map((t) =>
+          t.id === id ? { ...t, group: group?.trim() || 'Без группы' } : t,
+        ),
+      )
+
+      const { error } = await supabase
+        .from('tasks')
+        .update({ group_name: group ?? '' })
+        .eq('id', id)
+        .eq('user_id', userId)
+      if (error) await loadWorkspace()
+    },
+    [tasks, userId, loadWorkspace],
+  )
+
+  const groupNames = useMemo(
+    () =>
+      Array.from(
+        new Set(tasks.map((t) => t.group).filter((g) => g && g !== 'Без группы')),
+      ).sort(),
+    [tasks],
+  )
+
   const totalTrackedMs = useMemo(
     () => tasks.reduce((sum, t) => sum + liveElapsed(t), 0),
     [tasks, liveElapsed],
@@ -336,9 +365,11 @@ export function useCrodoStore(userId) {
     startTask,
     pauseActive,
     moveTask,
+    moveTaskGroup,
     deleteTask,
     addTask,
     addColumn,
+    groupNames,
     refetch: loadWorkspace,
   }
 }
