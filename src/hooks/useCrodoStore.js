@@ -20,6 +20,7 @@ export function useCrodoStore(userId) {
   const [columns, setColumns] = useState([])
   const [labels, setLabels] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(null)
   const [nowMs, setNowMs] = useState(() => Date.now())
 
   const activeTask = useMemo(() => tasks.find((t) => t.startedAt != null) ?? null, [tasks])
@@ -46,7 +47,7 @@ export function useCrodoStore(userId) {
   )
 
   const ensureWorkspace = useCallback(async () => {
-    await supabase.from('task_columns').upsert(
+    const colsUpsert = await supabase.from('task_columns').upsert(
       DEFAULT_COLUMNS.map((c, i) => ({
         user_id: userId,
         slug: c.slug,
@@ -56,7 +57,11 @@ export function useCrodoStore(userId) {
       })),
       { onConflict: 'user_id,slug', ignoreDuplicates: true },
     )
-    await supabase.from('task_labels').upsert(
+    if (colsUpsert.error) {
+      console.error('[crodo] failed to seed workspace defaults', colsUpsert.error)
+    }
+
+    const labsUpsert = await supabase.from('task_labels').upsert(
       DEFAULT_LABELS.map((l, i) => ({
         user_id: userId,
         slug: l.slug,
@@ -66,10 +71,17 @@ export function useCrodoStore(userId) {
       })),
       { onConflict: 'user_id,slug', ignoreDuplicates: true },
     )
+    if (labsUpsert.error) {
+      console.error('[crodo] failed to seed workspace defaults', labsUpsert.error)
+    }
+
+    return { colsError: colsUpsert.error, labsError: labsUpsert.error }
   }, [userId])
 
   const loadWorkspace = useCallback(async () => {
     if (!userId) return
+
+    setLoadError(null)
 
     let [colsRes, labsRes] = await Promise.all([
       supabase.from('task_columns').select('*').eq('user_id', userId).order('position'),
@@ -90,8 +102,39 @@ export function useCrodoStore(userId) {
       .eq('user_id', userId)
       .order('position', { ascending: true })
 
-    setColumns(sortColumns((colsRes.data ?? []).map(rowToColumn)))
-    setLabels((labsRes.data ?? []).map(rowToLabel))
+    // If columns or labels are still empty after all attempts due to errors, use fallback + show error
+    let finalColumns = (colsRes.data ?? []).map(rowToColumn)
+    let finalLabels = (labsRes.data ?? []).map(rowToLabel)
+
+    if (finalColumns.length === 0 || finalLabels.length === 0) {
+      if (colsRes.error || labsRes.error) {
+        console.error('[crodo] Failed to load columns/labels', {
+          colsError: colsRes.error,
+          labsError: labsRes.error,
+        })
+        setLoadError(
+          'Не удалось загрузить колонки и метки. Похоже, миграция supabase/migrations/0001_crodo_design.sql ещё не применена в Supabase — см. docs/SUPABASE_MIGRATION.md.',
+        )
+        // Fallback to defaults shaped like rowToColumn/rowToLabel
+        finalColumns = DEFAULT_COLUMNS.map((c, i) => ({
+          id: c.slug,
+          dbId: undefined,
+          name: c.name,
+          isDone: c.isDone,
+          position: i,
+        }))
+        finalLabels = DEFAULT_LABELS.map((l, i) => ({
+          id: l.slug,
+          dbId: undefined,
+          name: l.name,
+          color: l.color,
+          position: i,
+        }))
+      }
+    }
+
+    setColumns(sortColumns(finalColumns))
+    setLabels(finalLabels)
     setTasks((tasksRes.data ?? []).map(rowToTask))
     setLoading(false)
   }, [userId, ensureWorkspace])
@@ -284,6 +327,7 @@ export function useCrodoStore(userId) {
     columns,
     labels,
     loading,
+    loadError,
     activeId,
     activeTask,
     totalTrackedMs,
