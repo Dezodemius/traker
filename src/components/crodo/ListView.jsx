@@ -1,9 +1,10 @@
+import { Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatDuration, labelStyles } from '@/lib/crodo/types'
 import { TimerButton } from './TaskCard'
 
 export function ListView({ store }) {
-  const { tasks, columns, labels, activeId, liveElapsed, toggleTask, moveTask } = store
+  const { tasks, columns, labels, activeId, liveElapsed, toggleTask, moveTask, deleteTask } = store
 
   if (tasks.length === 0) {
     return (
@@ -79,7 +80,7 @@ export function ListView({ store }) {
                 {formatDuration(liveElapsed(task))}
               </span>
 
-              <div className="col-span-2 flex justify-end sm:col-span-1">
+              <div className="col-span-2 flex items-center justify-end gap-2 sm:col-span-1">
                 <select
                   aria-label="Переместить задачу"
                   value={task.columnId}
@@ -92,6 +93,19 @@ export function ListView({ store }) {
                     </option>
                   ))}
                 </select>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm(`Удалить задачу «${task.title}»?`)) {
+                      deleteTask(task.id)
+                    }
+                  }}
+                  aria-label="Удалить задачу"
+                  className="grid shrink-0 place-items-center rounded-md border border-border bg-secondary p-1 text-secondary-foreground transition-colors hover:border-destructive/50 hover:text-destructive"
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
               </div>
             </li>
           )

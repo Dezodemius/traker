@@ -6,7 +6,7 @@ import { formatCompact } from '@/lib/crodo/types'
 import { TaskCard } from './TaskCard'
 
 export function KanbanView({ store }) {
-  const { tasks, columns, labels, activeId, liveElapsed, toggleTask, moveTask, addColumn } = store
+  const { tasks, columns, labels, activeId, liveElapsed, toggleTask, moveTask, deleteTask, addColumn } = store
 
   const [adding, setAdding] = useState(false)
   const [name, setName] = useState('')
@@ -91,6 +91,7 @@ export function KanbanView({ store }) {
                               elapsedMs={liveElapsed(task)}
                               onToggle={() => toggleTask(task.id)}
                               onMove={(columnId) => moveTask(task.id, columnId)}
+                              onDelete={() => deleteTask(task.id)}
                             />
                           </div>
                         )}

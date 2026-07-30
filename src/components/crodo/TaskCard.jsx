@@ -1,4 +1,4 @@
-import { Pause, Play, Flag } from 'lucide-react'
+import { Pause, Play, Flag, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatDuration, labelStyles, priorityMeta } from '@/lib/crodo/types'
 
@@ -59,6 +59,7 @@ export function TaskCard({
   groupOptions,
   group,
   onMoveGroup,
+  onDelete,
 }) {
   const column = columns.find((c) => c.id === task.columnId)
   const isDone = column?.isDone
@@ -146,6 +147,21 @@ export function TaskCard({
               </option>
             ))}
           </select>
+
+          {onDelete && (
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm(`Удалить задачу «${task.title}»?`)) {
+                  onDelete()
+                }
+              }}
+              aria-label="Удалить задачу"
+              className="grid shrink-0 place-items-center rounded-md border border-border bg-secondary p-1 text-secondary-foreground transition-colors hover:border-destructive/50 hover:text-destructive"
+            >
+              <Trash2 className="size-3.5" />
+            </button>
+          )}
         </div>
       </div>
     </div>

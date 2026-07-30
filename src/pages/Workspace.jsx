@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { X } from 'lucide-react'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 import { useCrodoStore } from '@/hooks/useCrodoStore'
@@ -10,9 +11,10 @@ import { BentoView } from '@/components/crodo/BentoView'
 import { KanbanView } from '@/components/crodo/KanbanView'
 import { ListView } from '@/components/crodo/ListView'
 
-export function Workspace({ userId, onOpenDesignSystem }) {
+export function Workspace({ userId }) {
   const store = useCrodoStore(userId)
   const [view, setView] = useState(() => localStorage.getItem('crodo:view') || 'bento')
+  const [dismissedError, setDismissedError] = useState(false)
 
   useEffect(() => {
     localStorage.setItem('crodo:view', view)
@@ -33,7 +35,20 @@ export function Workspace({ userId, onOpenDesignSystem }) {
 
       <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-4 px-4 py-5 sm:px-6 sm:py-6">
         <header className="flex flex-col gap-4">
-          <AppHeader store={store} onOpenDesignSystem={onOpenDesignSystem} />
+          <AppHeader store={store} />
+          {store.loadError && !dismissedError && (
+            <div className="flex items-start gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+              <div className="flex-1 leading-relaxed">{store.loadError}</div>
+              <button
+                type="button"
+                onClick={() => setDismissedError(true)}
+                className="shrink-0 text-destructive/70 hover:text-destructive"
+                aria-label="Закрыть ошибку"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+          )}
           <TimerBar store={store} />
           <QuickAdd store={store} />
         </header>
