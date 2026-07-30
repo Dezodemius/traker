@@ -18,7 +18,8 @@ const priorityNames = {
 }
 
 export function BentoView({ store }) {
-  const { tasks, columns, labels, activeId, liveElapsed, toggleTask, moveTask } = store
+  const { tasks, columns, labels, activeId, liveElapsed, toggleTask, moveTask, moveTaskGroup, groupNames } =
+    store
 
   const [groupBy, setGroupBy] = useState('group')
 
@@ -108,6 +109,9 @@ export function BentoView({ store }) {
                     elapsedMs={liveElapsed(task)}
                     onToggle={() => toggleTask(task.id)}
                     onMove={(columnId) => moveTask(task.id, columnId)}
+                    group={task.group}
+                    groupOptions={groupNames}
+                    onMoveGroup={(g) => moveTaskGroup(task.id, g)}
                   />
                 ))}
               </div>

@@ -3,11 +3,12 @@ import { Plus } from 'lucide-react'
 import { priorityMeta } from '@/lib/crodo/types'
 
 export function QuickAdd({ store }) {
-  const { columns, labels, addTask } = store
+  const { columns, labels, groupNames, addTask } = store
   const [title, setTitle] = useState('')
   const [labelId, setLabelId] = useState('')
   const [columnId, setColumnId] = useState('')
   const [priority, setPriority] = useState('medium')
+  const [group, setGroup] = useState('')
 
   const activeColumnId = columnId || columns[0]?.id || 'today'
   const activeLabelId = labelId || labels[0]?.id || ''
@@ -20,8 +21,10 @@ export function QuickAdd({ store }) {
       labelId: activeLabelId || null,
       columnId: activeColumnId,
       priority,
+      group: group.trim(),
     })
     setTitle('')
+    setGroup('')
   }
 
   return (
@@ -64,6 +67,18 @@ export function QuickAdd({ store }) {
             </option>
           ))}
         </select>
+        <input
+          list="crodo-group-options"
+          value={group}
+          onChange={(e) => setGroup(e.target.value)}
+          placeholder="Группа (необязательно)…"
+          className="flex-1 rounded-lg border border-border bg-secondary px-2 py-1.5 text-xs text-secondary-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring sm:flex-none"
+        />
+        <datalist id="crodo-group-options">
+          {groupNames.map((g) => (
+            <option key={g} value={g} />
+          ))}
+        </datalist>
         <select
           aria-label="Приоритет"
           value={priority}
