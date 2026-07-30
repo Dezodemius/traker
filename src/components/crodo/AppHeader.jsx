@@ -1,10 +1,10 @@
-import { LogOut, SwatchBook } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { BRAND_NAME, BRAND_TAGLINE, BRAND_LOGO } from '@/lib/brand'
 import { formatCompact } from '@/lib/crodo/types'
 import { ThemeToggle } from './ThemeToggle'
 
-export function AppHeader({ store, onOpenDesignSystem }) {
+export function AppHeader({ store }) {
   const activeCount = store.tasks.filter(
     (t) => !store.columns.find((c) => c.id === t.columnId)?.isDone,
   ).length
@@ -30,14 +30,6 @@ export function AppHeader({ store, onOpenDesignSystem }) {
           <p className="font-mono text-sm tabular-nums text-foreground">{activeCount}</p>
           <p className="text-[11px] text-muted-foreground">в работе</p>
         </div>
-        <button
-          type="button"
-          onClick={onOpenDesignSystem}
-          aria-label="Дизайн-система"
-          className="grid size-9 place-items-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <SwatchBook className="size-4" />
-        </button>
         <ThemeToggle />
         <button
           type="button"
