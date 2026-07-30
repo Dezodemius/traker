@@ -11,7 +11,7 @@ import { BentoView } from '@/components/crodo/BentoView'
 import { KanbanView } from '@/components/crodo/KanbanView'
 import { ListView } from '@/components/crodo/ListView'
 
-export function Workspace({ userId, onOpenDesignSystem }) {
+export function Workspace({ userId }) {
   const store = useCrodoStore(userId)
   const [view, setView] = useState(() => localStorage.getItem('crodo:view') || 'bento')
   const [dismissedError, setDismissedError] = useState(false)
@@ -35,7 +35,7 @@ export function Workspace({ userId, onOpenDesignSystem }) {
 
       <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-4 px-4 py-5 sm:px-6 sm:py-6">
         <header className="flex flex-col gap-4">
-          <AppHeader store={store} onOpenDesignSystem={onOpenDesignSystem} />
+          <AppHeader store={store} />
           {store.loadError && !dismissedError && (
             <div className="flex items-start gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
               <div className="flex-1 leading-relaxed">{store.loadError}</div>
