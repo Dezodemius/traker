@@ -201,6 +201,23 @@ export function useCrodoStore(userId) {
     [tasks, columns, pauseActive, userId, loadWorkspace],
   )
 
+  const deleteTask = useCallback(
+    async (id) => {
+      if (activeId === id) {
+        await pauseActive()
+      }
+
+      setTasks((list) => list.filter((t) => t.id !== id))
+
+      const { error } = await supabase.from('tasks').delete().eq('id', id).eq('user_id', userId)
+      if (error) {
+        console.error('Failed to delete task:', error)
+        await loadWorkspace()
+      }
+    },
+    [activeId, pauseActive, userId, loadWorkspace],
+  )
+
   const addTask = useCallback(
     async ({ title, columnId, labelId, priority, group, note }) => {
       const maxPos = tasks.length ? Math.max(...tasks.map((t) => t.position)) : 0
@@ -275,6 +292,7 @@ export function useCrodoStore(userId) {
     startTask,
     pauseActive,
     moveTask,
+    deleteTask,
     addTask,
     addColumn,
     refetch: loadWorkspace,
