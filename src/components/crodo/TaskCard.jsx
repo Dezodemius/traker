@@ -1,4 +1,4 @@
-import { Pause, Play, Flag } from 'lucide-react'
+import { Pause, Play, Flag, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatDuration, labelStyles, priorityMeta } from '@/lib/crodo/types'
 
@@ -48,7 +48,7 @@ export function LabelChip({ label }) {
   )
 }
 
-export function TaskCard({ task, label, columns, running, elapsedMs, onToggle, onMove }) {
+export function TaskCard({ task, label, columns, running, elapsedMs, onToggle, onMove, onDelete }) {
   const column = columns.find((c) => c.id === task.columnId)
   const isDone = column?.isDone
   const priority = priorityMeta[task.priority]
@@ -107,18 +107,35 @@ export function TaskCard({ task, label, columns, running, elapsedMs, onToggle, o
           </span>
         </div>
 
-        <select
-          aria-label="Переместить задачу"
-          value={task.columnId}
-          onChange={(e) => onMove(e.target.value)}
-          className="max-w-[8rem] truncate rounded-md border border-border bg-secondary px-2 py-1 text-xs text-secondary-foreground outline-none transition-colors hover:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          {columns.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center gap-2">
+          <select
+            aria-label="Переместить задачу"
+            value={task.columnId}
+            onChange={(e) => onMove(e.target.value)}
+            className="max-w-[8rem] truncate rounded-md border border-border bg-secondary px-2 py-1 text-xs text-secondary-foreground outline-none transition-colors hover:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {columns.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+
+          {onDelete && (
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm(`Удалить задачу «${task.title}»?`)) {
+                  onDelete()
+                }
+              }}
+              aria-label="Удалить задачу"
+              className="grid shrink-0 place-items-center rounded-md border border-border bg-secondary p-1 text-secondary-foreground transition-colors hover:border-destructive/50 hover:text-destructive"
+            >
+              <Trash2 className="size-3.5" />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )
